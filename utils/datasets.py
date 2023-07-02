@@ -581,7 +581,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             #img, labels = self.albumentations(img, labels)
 
             # Augment colorspace
-            augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            # augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            augment_hsv_ng(img)
 
             # Apply cutouts
             # if random.random() < 0.9:
@@ -692,6 +693,21 @@ def augment_hsv(img, hgain=0.5, sgain=0.5, vgain=0.5):
 
     img_hsv = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat), cv2.LUT(val, lut_val))).astype(dtype)
     cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)  # no return needed
+
+# TODO: check & expose parameters
+def augment_hsv_ng(img):
+    r_h = np.random.randint(-5, 5)
+    r_s = np.random.uniform(0, 1)
+    r_l = np.random.uniform(0.7, 1.1)
+
+    hue, saturation, value = cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2HSV))
+
+    hue = ((180 + hue + r_h) % 180).astype(np.uint8)  # Modulo 180 to wrap around hue values
+    saturation = np.clip(saturation * r_s, 0, 255).astype(np.uint8)
+    value = np.clip(value * r_l, 0, 255).astype(np.uint8)
+
+    img_hsv = cv2.merge((hue, saturation, value))
+    cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)
 
 
 def hist_equalize(img, clahe=True, bgr=False):
